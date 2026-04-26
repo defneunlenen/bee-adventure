@@ -29,23 +29,30 @@ function generateLevel(lvl) {
         platforms.push({ x: x * TILE_SIZE, y: groundY * TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE * 2, type: 'ground' });
     }
 
-    // Floating platforms
+    // Floating platforms (y <= groundY-3 to ensure 2-tile gap above ground)
+    const maxPlatY = groundY - 3; // y=8 max, leaves 2 tiles to ground
     const platConfigs = [
-        { x: 10, y: 8, len: 4 }, { x: 18, y: 6, len: 3 }, { x: 25, y: 9, len: 5 },
-        { x: 35, y: 7, len: 3 }, { x: 42, y: 5, len: 4 }, { x: 50, y: 8, len: 3 },
-        { x: 58, y: 6, len: 5 }, { x: 65, y: 9, len: 3 }, { x: 72, y: 7, len: 4 },
-        { x: 82, y: 5, len: 3 }, { x: 90, y: 8, len: 4 }, { x: 98, y: 6, len: 3 },
-        { x: 105, y: 9, len: 5 }, { x: 115, y: 7, len: 3 }, { x: 125, y: 5, len: 4 },
-        { x: 135, y: 8, len: 3 }, { x: 145, y: 6, len: 5 }, { x: 155, y: 9, len: 3 },
-        { x: 165, y: 7, len: 4 }, { x: 175, y: 5, len: 3 },
+        { x: 10, y: 7, len: 4 }, { x: 18, y: 5, len: 3 }, { x: 25, y: 8, len: 5 },
+        { x: 35, y: 6, len: 3 }, { x: 42, y: 4, len: 4 }, { x: 50, y: 7, len: 3 },
+        { x: 58, y: 5, len: 5 }, { x: 65, y: 8, len: 3 }, { x: 72, y: 6, len: 4 },
+        { x: 82, y: 4, len: 3 }, { x: 90, y: 7, len: 4 }, { x: 98, y: 5, len: 3 },
+        { x: 105, y: 8, len: 5 }, { x: 115, y: 6, len: 3 }, { x: 125, y: 4, len: 4 },
+        { x: 135, y: 7, len: 3 }, { x: 145, y: 5, len: 5 }, { x: 155, y: 8, len: 3 },
+        { x: 165, y: 6, len: 4 }, { x: 175, y: 4, len: 3 },
     ];
 
     // Gap-bridging platforms
     if (lvl >= 1) {
-        platConfigs.push({ x: 44, y: 9, len: 2 }, { x: 46, y: 7, len: 2 });
-        platConfigs.push({ x: 77, y: 9, len: 2 }, { x: 79, y: 7, len: 2 });
-        platConfigs.push({ x: 119, y: 9, len: 2 }, { x: 122, y: 7, len: 2 });
+        platConfigs.push({ x: 44, y: 8, len: 2 }, { x: 46, y: 5, len: 2 });
+        platConfigs.push({ x: 77, y: 8, len: 2 }, { x: 79, y: 5, len: 2 });
+        platConfigs.push({ x: 119, y: 8, len: 2 }, { x: 122, y: 5, len: 2 });
     }
+
+    // Enforce minimum 2-tile vertical gap between platforms at same x
+    platConfigs.forEach(p => {
+        // Clamp y to ensure 2-tile gap above ground
+        if (p.y > maxPlatY) p.y = maxPlatY;
+    });
 
     platConfigs.forEach(p => {
         for (let i = 0; i < p.len; i++) {
@@ -54,6 +61,30 @@ function generateLevel(lvl) {
                 w: TILE_SIZE, h: TILE_SIZE, type: 'float'
             });
         }
+    });
+
+    // Post-process: remove floating platforms too close to another platform at same x
+    const MIN_GAP = 2 * TILE_SIZE; // 2 tiles = 80px
+    platforms = platforms.filter((p, idx) => {
+        if (p.type !== 'float') return true;
+        // Check against all other platforms at overlapping x
+        for (let j = 0; j < platforms.length; j++) {
+            if (j === idx) continue;
+            const other = platforms[j];
+            // Check x overlap
+            if (p.x + p.w <= other.x || p.x >= other.x + other.w) continue;
+            // Check vertical gap
+            const pBottom = p.y + p.h;
+            const oBottom = other.y + other.h;
+            const gap = p.y > other.y
+                ? p.y - oBottom
+                : other.y - pBottom;
+            if (gap < MIN_GAP && gap >= 0) {
+                // Too close - remove the higher one (keep lower for accessibility)
+                if (p.y < other.y) return false;
+            }
+        }
+        return true;
     });
 
     // Coins (pollen) - placed above surfaces to ensure all are reachable
@@ -231,12 +262,13 @@ function generateLevel(lvl) {
 
     // Boss (near end of level) - lowered for reachability
     const bossX = (WORLD_WIDTH - 15) * TILE_SIZE;
+    const bossBaseY = (groundY - 5) * TILE_SIZE;
     if (lvl === 1) {
-        boss = { x: bossX, y: (groundY - 5) * TILE_SIZE, w: 64, h: 48, hp: 5, maxHp: 5, type: 'bigbird', phase: 'patrol', attackTimer: 120, vx: 1.5, vy: 0, startX: bossX - 160, endX: bossX + 160, floatOffset: 0, alive: true, flashTimer: 0 };
+        boss = { x: bossX, y: bossBaseY, baseY: bossBaseY, w: 64, h: 48, hp: 5, maxHp: 5, type: 'bigbird', phase: 'patrol', attackTimer: 120, vx: 1.5, vy: 0, startX: bossX - 160, endX: bossX + 160, floatOffset: 0, alive: true, flashTimer: 0 };
     } else if (lvl === 2) {
-        boss = { x: bossX, y: (groundY - 6) * TILE_SIZE, w: 72, h: 56, hp: 8, maxHp: 8, type: 'giantwasp', phase: 'patrol', attackTimer: 90, vx: 1.2, vy: 0, startX: bossX - 200, endX: bossX + 200, floatOffset: 0, alive: true, flashTimer: 0, shootTimer: 60 };
+        boss = { x: bossX, y: bossBaseY, baseY: bossBaseY, w: 72, h: 56, hp: 8, maxHp: 8, type: 'giantwasp', phase: 'patrol', attackTimer: 90, vx: 1.2, vy: 0, startX: bossX - 200, endX: bossX + 200, floatOffset: 0, alive: true, flashTimer: 0, shootTimer: 60 };
     } else {
-        boss = { x: bossX, y: (groundY - 6) * TILE_SIZE, w: 80, h: 60, hp: 12, maxHp: 12, type: 'kingbird', phase: 'patrol', attackTimer: 80, vx: 1.8, vy: 0, startX: bossX - 240, endX: bossX + 240, floatOffset: 0, alive: true, flashTimer: 0, shootTimer: 50, summonTimer: 300 };
+        boss = { x: bossX, y: bossBaseY, baseY: bossBaseY, w: 80, h: 60, hp: 12, maxHp: 12, type: 'kingbird', phase: 'patrol', attackTimer: 80, vx: 1.8, vy: 0, startX: bossX - 240, endX: bossX + 240, floatOffset: 0, alive: true, flashTimer: 0, shootTimer: 50, summonTimer: 300 };
     }
 
     // Boss area: guaranteed super box + trampolines + checkpoint
@@ -316,14 +348,26 @@ function generateLevel(lvl) {
         });
     }
 
-    // Checkpoints
+    // Checkpoints - ensure they're on solid ground
     checkpoints = [];
     lastCheckpoint = null;
     const cpCount = 3 + lvl;
     const spacing = Math.floor((WORLD_WIDTH - 20) / (cpCount + 1));
     for (let i = 1; i <= cpCount; i++) {
+        let cpTile = 5 + i * spacing;
+        // Check if there's ground beneath, shift if over a gap
+        const hasGround = (tx) => platforms.some(p =>
+            p.type === 'ground' && p.x === tx * TILE_SIZE
+        );
+        if (!hasGround(cpTile)) {
+            // Search nearby tiles for ground (up to 10 tiles in each direction)
+            for (let offset = 1; offset <= 10; offset++) {
+                if (hasGround(cpTile + offset)) { cpTile = cpTile + offset; break; }
+                if (hasGround(cpTile - offset)) { cpTile = cpTile - offset; break; }
+            }
+        }
         checkpoints.push({
-            x: (5 + i * spacing) * TILE_SIZE,
+            x: cpTile * TILE_SIZE,
             y: (groundY - 1) * TILE_SIZE,
             activated: false,
             glowFrame: Math.random() * Math.PI * 2

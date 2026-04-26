@@ -273,10 +273,15 @@ function updateBoss() {
 
     // Movement
     boss.x += boss.vx;
-    boss.y += Math.sin(frameCount * 0.03 + boss.floatOffset) * 0.5;
 
     if (boss.x <= boss.startX || boss.x >= boss.endX) {
         boss.vx *= -1;
+    }
+
+    // Pull back toward base Y (prevents drift from dive attacks)
+    const yDiff = boss.baseY - boss.y;
+    if (boss.vy === 0 && Math.abs(yDiff) > 2) {
+        boss.y += yDiff * 0.05;
     }
 
     // Attack patterns
@@ -357,6 +362,12 @@ function updateBoss() {
             });
         }
     }
+
+    // Clamp boss Y to stay on screen
+    const minY = TILE_SIZE;
+    const maxY = (WORLD_HEIGHT - 4) * TILE_SIZE;
+    if (boss.y < minY) { boss.y = minY; boss.vy = 0; }
+    if (boss.y > maxY) { boss.y = maxY; boss.vy = 0; }
 
     // Boss-player collision (stomp)
     if (player.invincible <= 0) {
