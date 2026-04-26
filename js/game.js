@@ -20,6 +20,7 @@ function gameLoop() {
         updateCheckpoints();
         updateSuperBoxes();
         updateStingers();
+        updateEnemyStingers();
         checkWin();
 
         backgroundFlowers.forEach(f => drawFlowerBg(f));
@@ -28,6 +29,7 @@ function gameLoop() {
         superBoxes.forEach(b => drawSuperBox(b));
         coins.forEach(c => drawCoin(c));
         stingers.forEach(s => drawStinger(s));
+        enemyStingers.forEach(s => drawEnemyStinger(s));
         enemies.forEach(e => drawBird(e));
         drawBee(player);
         drawFlag();

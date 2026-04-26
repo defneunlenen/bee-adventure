@@ -307,6 +307,11 @@ function drawBird(e) {
     const sx = e.x - cameraX;
     if (sx < -50 || sx > canvas.width + 50) return;
 
+    if (e.type === 'wasp') {
+        drawWasp(e);
+        return;
+    }
+
     const dir = e.vx > 0 ? 1 : -1;
     const floatY = e.type === 'flying' ? Math.sin(frameCount * 0.05 + e.floatOffset) * 8 : 0;
 
@@ -378,6 +383,180 @@ function drawBird(e) {
         ctx.lineTo(5 - legAnim, 15);
         ctx.stroke();
     }
+
+    ctx.restore();
+}
+
+function drawWasp(e) {
+    const sx = e.x - cameraX;
+    const dir = e.vx > 0 ? 1 : -1;
+    const floatY = Math.sin(frameCount * 0.05 + e.floatOffset) * 8;
+
+    ctx.save();
+    ctx.translate(sx + e.w / 2, e.y + e.h / 2 + floatY);
+    ctx.scale(dir, 1);
+
+    // Wings (larger, more aggressive)
+    const wingFlap = Math.sin(frameCount * 0.5) * 0.5;
+    ctx.fillStyle = 'rgba(220, 240, 255, 0.5)';
+    ctx.strokeStyle = 'rgba(180, 210, 240, 0.7)';
+    ctx.lineWidth = 1;
+    ctx.save();
+    ctx.rotate(-0.4 + wingFlap);
+    ctx.beginPath();
+    ctx.ellipse(-3, -16, 16, 8, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.rotate(0.1 + wingFlap * 0.6);
+    ctx.beginPath();
+    ctx.ellipse(-5, -10, 12, 6, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Body (yellow-black wasp)
+    ctx.fillStyle = '#FFB300';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 17, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Black stripes (thicker, more prominent)
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(-6, -6, 14, 4);
+    ctx.fillRect(-8, 1, 16, 4);
+    ctx.fillRect(-5, 7, 12, 3);
+
+    // Head
+    ctx.fillStyle = '#FF8F00';
+    ctx.beginPath();
+    ctx.arc(14, -2, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Angry eyes
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(16, -5, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#b71c1c';
+    ctx.beginPath();
+    ctx.arc(17, -5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(17.5, -6, 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Angry eyebrows
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(12, -12);
+    ctx.lineTo(20, -10);
+    ctx.stroke();
+
+    // Mandibles
+    ctx.fillStyle = '#5D4037';
+    ctx.beginPath();
+    ctx.moveTo(21, 0);
+    ctx.lineTo(26, 3);
+    ctx.lineTo(22, 4);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(21, -2);
+    ctx.lineTo(26, -5);
+    ctx.lineTo(22, -5);
+    ctx.fill();
+
+    // Antennae
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(16, -10);
+    ctx.quadraticCurveTo(18, -22, 24, -18);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(13, -10);
+    ctx.quadraticCurveTo(11, -24, 17, -22);
+    ctx.stroke();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.arc(24, -18, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(17, -22, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Stinger (large, menacing)
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.moveTo(-17, 2);
+    ctx.lineTo(-28, 0);
+    ctx.lineTo(-17, -1);
+    ctx.fill();
+    // Stinger highlight
+    ctx.fillStyle = '#FF6F00';
+    ctx.beginPath();
+    ctx.arc(-22, 0.5, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) {
+        const legX = -5 + i * 7;
+        const legAnim = Math.sin(frameCount * 0.15 + i) * 2;
+        ctx.beginPath();
+        ctx.moveTo(legX, 10);
+        ctx.lineTo(legX - 3, 16 + legAnim);
+        ctx.stroke();
+    }
+
+    // Shoot warning glow (when about to shoot)
+    if (e.shootTimer < 90) {
+        const warn = 0.3 + Math.sin(frameCount * 0.3) * 0.2;
+        ctx.globalAlpha = warn;
+        ctx.fillStyle = '#FF3D00';
+        ctx.beginPath();
+        ctx.arc(-25, 0, 6 + Math.sin(frameCount * 0.2) * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+}
+
+function drawEnemyStinger(s) {
+    const sx = s.x - cameraX;
+    if (sx < -20 || sx > canvas.width + 20) return;
+
+    ctx.save();
+    ctx.translate(sx, s.y);
+
+    // Trail glow
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#FF6F00';
+    ctx.beginPath();
+    ctx.ellipse(-s.vx * 2, -s.vy * 2, 10, 4, Math.atan2(s.vy, s.vx), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Stinger body
+    ctx.globalAlpha = 1;
+    const angle = Math.atan2(s.vy, s.vx);
+    ctx.rotate(angle);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.moveTo(8, 0);
+    ctx.lineTo(-4, -3);
+    ctx.lineTo(-4, 3);
+    ctx.fill();
+
+    // Orange core
+    ctx.fillStyle = '#FF6F00';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 4, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
 }

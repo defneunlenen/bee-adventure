@@ -115,6 +115,25 @@ function generateLevel(lvl) {
         });
     }
 
+    // Wasps (esek arisi)
+    const waspCount = 2 + lvl;
+    const waspSpacing = Math.floor((WORLD_WIDTH - 40) / (waspCount + 1));
+    for (let i = 0; i < waspCount; i++) {
+        const wx = (15 + (i + 1) * waspSpacing) * TILE_SIZE;
+        enemies.push({
+            x: wx, y: (2 + Math.random() * 3) * TILE_SIZE,
+            w: 40, h: 32,
+            vx: (0.6 + Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1) * (0.8 + lvl * 0.2),
+            startX: wx - 120, endX: wx + 120,
+            alive: true,
+            type: 'wasp',
+            wingFrame: Math.random() * Math.PI * 2,
+            vy: 0,
+            floatOffset: Math.random() * Math.PI * 2,
+            shootTimer: Math.floor(300 + Math.random() * 300)
+        });
+    }
+
     // Flag position
     flagX = (WORLD_WIDTH - 5) * TILE_SIZE;
 
@@ -173,6 +192,7 @@ function generateLevel(lvl) {
     // Super food boxes
     superBoxes = [];
     stingers = [];
+    enemyStingers = [];
     const boxPositions = [
         { x: 15, y: 7 }, { x: 38, y: 6 }, { x: 60, y: 5 },
         { x: 85, y: 7 }, { x: 110, y: 6 }, { x: 140, y: 5 },

@@ -9,7 +9,7 @@ function rectCollide(a, b) {
 
 function aliveCollide(a, e) {
     if (!e.alive) return false;
-    const floatY = e.type === 'flying' ? Math.sin(frameCount * 0.05 + e.floatOffset) * 8 : 0;
+    const floatY = (e.type === 'flying' || e.type === 'wasp') ? Math.sin(frameCount * 0.05 + e.floatOffset) * 8 : 0;
     return a.x < e.x + e.w && a.x + a.w > e.x && a.y < e.y + e.h + floatY && a.y + a.h > e.y + floatY;
 }
 
@@ -17,13 +17,35 @@ function updateEnemies() {
     enemies.forEach(e => {
         if (!e.alive) return;
 
-        if (e.type === 'flying') {
+        if (e.type === 'flying' || e.type === 'wasp') {
             e.x += e.vx;
             e.y += Math.sin(frameCount * 0.03 + e.floatOffset) * 0.5;
 
             // Patrol
             if (e.x <= e.startX || e.x >= e.endX) {
                 e.vx *= -1;
+            }
+
+            // Wasp shooting
+            if (e.type === 'wasp') {
+                e.shootTimer--;
+                if (e.shootTimer <= 0) {
+                    e.shootTimer = 600; // 10 seconds
+                    // Shoot toward player direction
+                    const dx = player.x - e.x;
+                    const dy = player.y - e.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 0) {
+                        const speed = 3;
+                        enemyStingers.push({
+                            x: e.x + e.w / 2,
+                            y: e.y + e.h / 2,
+                            vx: (dx / dist) * speed,
+                            vy: (dy / dist) * speed,
+                            life: 300
+                        });
+                    }
+                }
             }
         } else {
             // Walking enemy - gravity + platform collision
@@ -90,14 +112,47 @@ function updateEnemies() {
                 // Stomp!
                 e.alive = false;
                 player.vy = -9.6;
-                score += 100;
-                spawnParticles(e.x, e.y, '#e74c3c', 12);
+                score += e.type === 'wasp' ? 150 : 100;
+                spawnParticles(e.x, e.y, e.type === 'wasp' ? '#FF8F00' : '#e74c3c', 12);
                 spawnParticles(e.x, e.y, '#f39c12', 8);
             } else {
                 playerDie();
             }
         }
     });
+}
+
+function updateEnemyStingers() {
+    enemyStingers.forEach((s, si) => {
+        s.x += s.vx;
+        s.y += s.vy;
+        s.life--;
+
+        if (s.life <= 0) { enemyStingers.splice(si, 1); return; }
+
+        // Hit player
+        if (player.invincible <= 0) {
+            const sRect = { x: s.x - 5, y: s.y - 3, w: 10, h: 6 };
+            if (rectCollide(player, sRect)) {
+                s.life = 0;
+                playerDie();
+                return;
+            }
+        }
+
+        // Hit platform - destroy stinger
+        const sRect = { x: s.x - 5, y: s.y - 3, w: 10, h: 6 };
+        const hitPlatform = platforms.some(p => rectCollide(sRect, p));
+        if (hitPlatform) {
+            spawnParticles(s.x, s.y, '#FF6F00', 4);
+            s.life = 0;
+        }
+    });
+
+    // Clean up dead stingers (iterate backwards)
+    for (let i = enemyStingers.length - 1; i >= 0; i--) {
+        if (enemyStingers[i].life <= 0) enemyStingers.splice(i, 1);
+    }
 }
 
 function updateCoins() {
@@ -162,7 +217,7 @@ function updateStingers() {
 
         enemies.forEach(e => {
             if (!e.alive) return;
-            const floatY = e.type === 'flying' ? Math.sin(frameCount * 0.05 + e.floatOffset) * 8 : 0;
+            const floatY = (e.type === 'flying' || e.type === 'wasp') ? Math.sin(frameCount * 0.05 + e.floatOffset) * 8 : 0;
             const eRect = { x: e.x, y: e.y + floatY, w: e.w, h: e.h };
             const sRect = { x: s.x - 5, y: s.y - 3, w: 10, h: 6 };
             if (rectCollide(sRect, eRect)) {

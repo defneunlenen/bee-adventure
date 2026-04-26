@@ -54,3 +54,4 @@ let checkpoints = [];
 let lastCheckpoint = null;
 let superBoxes = [];
 let stingers = [];
+let enemyStingers = [];
