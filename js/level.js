@@ -49,16 +49,50 @@ function generateLevel(lvl) {
         }
     });
 
-    // Coins (pollen)
+    // Coins (pollen) - placed above surfaces to ensure all are reachable
     const coinPositions = [];
     for (let i = 0; i < 40 + lvl * 10; i++) {
         const cx = 5 + Math.floor(Math.random() * (WORLD_WIDTH - 15));
-        const cy = 3 + Math.floor(Math.random() * 7);
-        coinPositions.push({ x: cx * TILE_SIZE + 10, y: cy * TILE_SIZE, collected: false });
+        const coinX = cx * TILE_SIZE + 10;
+
+        // Find platforms at this x position
+        const platformsHere = platforms.filter(p =>
+            coinX + 20 > p.x && coinX < p.x + p.w
+        );
+
+        if (platformsHere.length === 0) continue; // Over a gap, skip
+
+        // Pick a random platform to place coin above
+        const targetPlatform = platformsHere[Math.floor(Math.random() * platformsHere.length)];
+
+        // Place 1-4 tiles above it (within jump reach)
+        const tilesUp = 1 + Math.floor(Math.random() * 4);
+        const coinY = targetPlatform.y - tilesUp * TILE_SIZE;
+
+        if (coinY < TILE_SIZE) continue; // Don't place above screen
+
+        // Ensure coin is not inside any platform
+        const blocked = platforms.some(p =>
+            coinX < p.x + p.w && coinX + 20 > p.x &&
+            coinY < p.y + p.h && coinY + 20 > p.y
+        );
+
+        if (!blocked) {
+            coinPositions.push({ x: coinX, y: coinY, collected: false });
+        }
     }
+    // Add coins above floating platforms
     platConfigs.forEach(p => {
         for (let i = 0; i < p.len; i += 2) {
-            coinPositions.push({ x: (p.x + i) * TILE_SIZE + 10, y: (p.y - 2) * TILE_SIZE, collected: false });
+            const coinX = (p.x + i) * TILE_SIZE + 10;
+            const coinY = (p.y - 2) * TILE_SIZE;
+            const blocked = platforms.some(pl =>
+                coinX < pl.x + pl.w && coinX + 20 > pl.x &&
+                coinY < pl.y + pl.h && coinY + 20 > pl.y
+            );
+            if (!blocked) {
+                coinPositions.push({ x: coinX, y: coinY, collected: false });
+            }
         }
     });
     coins = coinPositions;

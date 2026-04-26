@@ -17,15 +17,71 @@ function updateEnemies() {
     enemies.forEach(e => {
         if (!e.alive) return;
 
-        e.x += e.vx;
-
         if (e.type === 'flying') {
+            e.x += e.vx;
             e.y += Math.sin(frameCount * 0.03 + e.floatOffset) * 0.5;
-        }
 
-        // Patrol
-        if (e.x <= e.startX || e.x >= e.endX) {
-            e.vx *= -1;
+            // Patrol
+            if (e.x <= e.startX || e.x >= e.endX) {
+                e.vx *= -1;
+            }
+        } else {
+            // Walking enemy - gravity + platform collision
+            e.vy += GRAVITY;
+            if (e.vy > 15) e.vy = 15;
+
+            // Move X
+            e.x += e.vx;
+
+            // Collision X with platforms
+            platforms.forEach(p => {
+                if (e.x < p.x + p.w && e.x + e.w > p.x && e.y < p.y + p.h && e.y + e.h > p.y) {
+                    if (e.vx > 0) e.x = p.x - e.w;
+                    else if (e.vx < 0) e.x = p.x + p.w;
+                    e.vx *= -1;
+                }
+            });
+
+            // Move Y
+            e.y += e.vy;
+
+            // Collision Y with platforms
+            e.onGround = false;
+            platforms.forEach(p => {
+                if (e.x < p.x + p.w && e.x + e.w > p.x && e.y < p.y + p.h && e.y + e.h > p.y) {
+                    if (e.vy > 0) {
+                        e.y = p.y - e.h;
+                        e.vy = 0;
+                        e.onGround = true;
+                    } else if (e.vy < 0) {
+                        e.y = p.y + p.h;
+                        e.vy = 0;
+                    }
+                }
+            });
+
+            // Edge detection - don't walk off platforms
+            if (e.onGround) {
+                const checkX = e.vx > 0 ? e.x + e.w + 2 : e.x - 2;
+                const checkY = e.y + e.h + 5;
+                const hasFloor = platforms.some(p =>
+                    checkX >= p.x && checkX <= p.x + p.w &&
+                    checkY >= p.y && checkY <= p.y + p.h
+                );
+                if (!hasFloor) {
+                    e.vx *= -1;
+                }
+            }
+
+            // Fall death
+            if (e.y > canvas.height + 100) {
+                e.alive = false;
+            }
+
+            // Patrol bounds
+            if (e.x <= e.startX || e.x >= e.endX) {
+                e.vx *= -1;
+            }
         }
 
         // Player collision
