@@ -448,14 +448,24 @@ function checkWin() {
 
         if (level < 3) {
             level++;
+            // Unlock next level
+            if (level > unlockedLevel) {
+                unlockedLevel = level;
+                localStorage.setItem('beeUnlockedLevel', unlockedLevel);
+            }
             generateLevel(level);
             spawnParticles(player.x, player.y, '#FFD54F', 20);
         } else {
+            // All levels complete - ensure level 3 is marked unlocked
+            if (unlockedLevel < 3) {
+                unlockedLevel = 3;
+                localStorage.setItem('beeUnlockedLevel', unlockedLevel);
+            }
             gameState = 'win';
             stopMusic();
             sfxWin();
             saveHighScore(score);
-            showOverlay('Tebrikler!', 'Tum seviyeleri tamamladin! Toplam Bal: ' + score + getHighScoreText(), 'Tekrar Oyna');
+            showOverlay('Tebrikler!', 'Tum seviyeleri tamamladin! Toplam Bal: ' + score + getHighScoreText(), 'Ana Menu');
         }
     }
 }

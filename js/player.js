@@ -189,7 +189,7 @@ function playerDie() {
         gameState = 'gameover';
         stopMusic();
         saveHighScore(score);
-        showOverlay('Oyun Bitti!', 'Toplam Bal: ' + score + getHighScoreText(), 'Tekrar Oyna');
+        showOverlay('Oyun Bitti!', 'Toplam Bal: ' + score + getHighScoreText(), 'Ana Menu');
     } else {
         if (lastCheckpoint) {
             player.x = lastCheckpoint.x - 20;

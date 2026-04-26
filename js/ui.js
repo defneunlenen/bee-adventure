@@ -12,10 +12,17 @@ function showOverlay(title, text, btnText) {
 
 function startGame() {
     overlay.style.display = 'none';
-    if (gameState === 'menu' || gameState === 'gameover' || gameState === 'win') {
+    if (gameState === 'gameover' || gameState === 'win') {
+        // Go back to menu to pick level
+        selectedLevel = unlockedLevel;
+        gameState = 'menu';
+        generateLevel(1);
+        return;
+    }
+    if (gameState === 'menu') {
         score = 0;
         lives = 3;
-        level = 1;
+        level = selectedLevel;
         particles = [];
         pollenParticles = [];
         generateLevel(level);

@@ -99,3 +99,7 @@ player.skin = selectedSkin;
 
 // Achievement notification queue
 let achievementNotifications = [];
+
+// Level progress
+let unlockedLevel = parseInt(localStorage.getItem('beeUnlockedLevel') || '1');
+let selectedLevel = unlockedLevel;

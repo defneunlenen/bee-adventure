@@ -112,32 +112,96 @@ function gameLoop() {
         // Instructions
         ctx.fillStyle = 'white';
         ctx.font = '16px sans-serif';
-        ctx.fillText('N tusu ile karakter sec', canvas.width / 2, 340);
+        ctx.fillText('N tusu ile karakter sec', canvas.width / 2, 330);
 
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Ok tuslari / WASD: Hareket | Space: Zipla | E/X: Igne at | M: Ses', canvas.width / 2, 400);
+        // Level selector
+        const lvlY = 380;
+        ctx.fillStyle = '#FFD54F';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillText('Seviye Sec', canvas.width / 2, lvlY - 25);
+
+        const lvlSpacing = 100;
+        const lvlStartX = canvas.width / 2 - (2) * lvlSpacing / 2;
+        const levelNames = ['Kolay', 'Orta', 'Zor'];
+
+        for (let i = 1; i <= 3; i++) {
+            const lx = lvlStartX + (i - 1) * lvlSpacing;
+            const isUnlocked = i <= unlockedLevel;
+            const isSelected = i === selectedLevel;
+
+            // Box
+            if (isSelected) {
+                ctx.fillStyle = 'rgba(255, 213, 79, 0.25)';
+                ctx.beginPath();
+                ctx.roundRect(lx - 38, lvlY - 18, 76, 50, 10);
+                ctx.fill();
+                ctx.strokeStyle = '#FFD54F';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(lx - 38, lvlY - 18, 76, 50, 10);
+                ctx.stroke();
+            }
+
+            // Number
+            ctx.font = 'bold 22px sans-serif';
+            if (!isUnlocked) {
+                ctx.fillStyle = 'rgba(255,255,255,0.25)';
+            } else if (isSelected) {
+                ctx.fillStyle = '#FFD54F';
+            } else {
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            }
+            ctx.fillText(i, lx, lvlY + 5);
+
+            // Label
+            ctx.font = '12px sans-serif';
+            if (!isUnlocked) {
+                ctx.fillText('Kilitli', lx, lvlY + 22);
+            } else {
+                ctx.fillText(levelNames[i - 1], lx, lvlY + 22);
+            }
+
+            // Lock icon for locked levels
+            if (!isUnlocked) {
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.font = '16px sans-serif';
+                ctx.fillText('🔒', lx, lvlY - 5);
+            }
+        }
+
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '13px sans-serif';
+        ctx.fillText('← → ok tuslari ile seviye sec', canvas.width / 2, lvlY + 48);
+
+        // Controls info
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.font = '13px sans-serif';
+        ctx.fillText('WASD/Ok: Hareket | Space: Zipla | E/X: Igne | M: Ses', canvas.width / 2, lvlY + 70);
 
         // Start prompt
         const pulse = 0.7 + Math.sin(frameCount * 0.05) * 0.3;
         ctx.globalAlpha = pulse;
         ctx.fillStyle = '#FF9800';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.fillText('SPACE ile Oyunu Basla', canvas.width / 2, 470);
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText('SPACE ile Seviye ' + selectedLevel + ' Basla', canvas.width / 2, lvlY + 105);
         ctx.globalAlpha = 1;
 
         // High scores
         if (highScores.length > 0) {
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
-            ctx.font = '13px sans-serif';
-            ctx.fillText('En Yuksek: ' + highScores[0] + ' bal', canvas.width / 2, 510);
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('En Yuksek: ' + highScores[0] + ' bal', canvas.width / 2, lvlY + 130);
         }
 
         ctx.textAlign = 'start';
 
-        // Start with Space or Enter
-        if (keys['Space'] || keys['Enter']) {
+        // Start with Space or Enter (debounce to avoid accidental start)
+        if ((keys['Space'] || keys['Enter']) && !this._menuStartHeld) {
+            this._menuStartHeld = true;
             startGame();
+        }
+        if (!keys['Space'] && !keys['Enter']) {
+            this._menuStartHeld = false;
         }
     }
 
@@ -174,9 +238,13 @@ function setupTouchControls() {
     }
 }
 
-// Canvas click to start from menu
-canvas.addEventListener('click', () => {
-    if (gameState === 'menu') startGame();
+// Canvas click to start from menu (lower half only)
+canvas.addEventListener('click', (e) => {
+    if (gameState === 'menu') {
+        const rect = canvas.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        if (y > rect.height * 0.75) startGame();
+    }
 });
 
 // Initialize
