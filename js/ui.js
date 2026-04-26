@@ -1,10 +1,11 @@
 // ============================================
-// ui.js - Overlay UI (menu, gameover, win)
+// ui.js - Overlay UI (menu, gameover, win),
+//         high scores, skin selection
 // ============================================
 
 function showOverlay(title, text, btnText) {
     overlayTitle.textContent = title;
-    overlayText.textContent = text;
+    overlayText.innerHTML = text;
     overlayBtn.textContent = btnText;
     overlay.style.display = 'block';
 }
@@ -19,5 +20,29 @@ function startGame() {
         pollenParticles = [];
         generateLevel(level);
         gameState = 'playing';
+        initAudio();
+        startMusic();
     }
+}
+
+function saveHighScore(s) {
+    highScores.push(s);
+    highScores.sort((a, b) => b - a);
+    highScores = highScores.slice(0, 5);
+    localStorage.setItem('beeHighScores', JSON.stringify(highScores));
+}
+
+function getHighScoreText() {
+    if (highScores.length === 0) return '';
+    let txt = '<br><br><b>En Yuksek Skorlar:</b><br>';
+    highScores.forEach((s, i) => {
+        txt += (i + 1) + '. ' + s + ' bal<br>';
+    });
+    return txt;
+}
+
+function getSkinInfoText() {
+    let txt = '<br><small>Skin: ' + SKINS[player.skin].name;
+    txt += ' | N tusu ile degistir</small>';
+    return txt;
 }

@@ -21,57 +21,124 @@ function gameLoop() {
         updateSuperBoxes();
         updateStingers();
         updateEnemyStingers();
+        updateMovingPlatforms();
+        updateBoss();
+        updatePowerUps();
+        updateSecretAreas();
         checkWin();
 
         backgroundFlowers.forEach(f => drawFlowerBg(f));
+        waterZones.forEach(wz => drawWaterZone(wz));
         platforms.forEach(p => drawGround(p));
+        movingPlatforms.forEach(mp => drawMovingPlatform(mp));
+        trampolines.forEach(t => drawTrampoline(t));
+        secretAreas.forEach(sa => drawSecretArea(sa));
+        powerUps.forEach(pu => drawPowerUp(pu));
         checkpoints.forEach(cp => drawCheckpoint(cp));
         superBoxes.forEach(b => drawSuperBox(b));
         coins.forEach(c => drawCoin(c));
         stingers.forEach(s => drawStinger(s));
         enemyStingers.forEach(s => drawEnemyStinger(s));
-        enemies.forEach(e => drawBird(e));
+        enemies.forEach(e => {
+            if (e.type === 'wasp') drawWasp(e);
+            else drawBird(e);
+        });
+        drawBoss();
         drawBee(player);
         drawFlag();
         drawParticles();
         drawHUD();
+        drawBossHP();
+        drawAchievementNotifications();
     } else if (gameState === 'menu') {
         backgroundFlowers.forEach(f => drawFlowerBg(f));
-        // Static bee in menu
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2 - 80);
-        const menuBob = Math.sin(frameCount * 0.05) * 10;
-        ctx.translate(0, menuBob);
 
-        ctx.scale(2, 2);
-        const wf = Math.sin(frameCount * 0.3) * 0.4;
-        ctx.fillStyle = 'rgba(200, 230, 255, 0.6)';
-        ctx.save();
-        ctx.rotate(-0.3 + wf);
-        ctx.beginPath();
-        ctx.ellipse(-2, -14, 12, 7, 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        ctx.fillStyle = '#FFC107';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 14, 11, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#2C2C2C';
-        ctx.fillRect(-4, -4, 10, 3);
-        ctx.fillRect(-6, 2, 12, 3);
+        // Hide HTML overlay in menu - draw everything on canvas
+        overlay.style.display = 'none';
+
+        // Title
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
         ctx.fillStyle = '#FFD54F';
-        ctx.beginPath();
-        ctx.arc(12, -2, 8, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.font = 'bold 42px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Defnenin Ari Macerasi', canvas.width / 2, 70);
+
+        // Draw all 4 skins side by side
+        const skinKeys = Object.keys(SKINS);
+        const spacing = 180;
+        const startX = canvas.width / 2 - (skinKeys.length - 1) * spacing / 2;
+
+        skinKeys.forEach((key, i) => {
+            const cx = startX + i * spacing;
+            const cy = 200;
+            const isSelected = player.skin === key;
+
+            // Selection highlight
+            if (isSelected) {
+                ctx.strokeStyle = '#FFD54F';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#FFD54F';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.roundRect(cx - 55, cy - 60, 110, 120, 12);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = 'rgba(255, 213, 79, 0.15)';
+                ctx.beginPath();
+                ctx.roundRect(cx - 55, cy - 60, 110, 120, 12);
+                ctx.fill();
+            }
+
+            // Draw bee at 2.5x scale
+            ctx.save();
+            ctx.translate(cx, cy);
+            const scale = isSelected ? 2.8 : 2.2;
+            ctx.scale(scale, scale);
+            ctx.translate(-cx, -cy);
+            const beeX = cx - 16 + cameraX;
+            const beeY = cy - 16;
+            drawBee({ x: beeX, y: beeY, w: 32, h: 32, facing: 1, invincible: 0, superMode: false, shield: false, speedBoost: 0, skin: key });
+            ctx.restore();
+
+            // Skin name
+            ctx.fillStyle = isSelected ? '#FFD54F' : 'rgba(255,255,255,0.6)';
+            ctx.font = isSelected ? 'bold 16px sans-serif' : '14px sans-serif';
+            ctx.fillText(SKINS[key].name, cx, cy + 75);
+        });
+
+        // Instructions
         ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(15, -4, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#1a1a1a';
-        ctx.beginPath();
-        ctx.arc(16, -4, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        ctx.font = '16px sans-serif';
+        ctx.fillText('N tusu ile karakter sec', canvas.width / 2, 340);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Ok tuslari / WASD: Hareket | Space: Zipla | E/X: Igne at | M: Ses', canvas.width / 2, 400);
+
+        // Start prompt
+        const pulse = 0.7 + Math.sin(frameCount * 0.05) * 0.3;
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = '#FF9800';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText('SPACE ile Oyunu Basla', canvas.width / 2, 470);
+        ctx.globalAlpha = 1;
+
+        // High scores
+        if (highScores.length > 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.font = '13px sans-serif';
+            ctx.fillText('En Yuksek: ' + highScores[0] + ' bal', canvas.width / 2, 510);
+        }
+
+        ctx.textAlign = 'start';
+
+        // Start with Space or Enter
+        if (keys['Space'] || keys['Enter']) {
+            startGame();
+        }
     }
 
     requestAnimationFrame(gameLoop);
@@ -107,8 +174,12 @@ function setupTouchControls() {
     }
 }
 
+// Canvas click to start from menu
+canvas.addEventListener('click', () => {
+    if (gameState === 'menu') startGame();
+});
+
 // Initialize
-showOverlay('Ari Macerasi', 'Ok tuslari veya WASD ile hareket et, Space ile zipla! Kuslarin ustune ziplayarak yok et!', 'Oyunu Basla');
 gameState = 'menu';
 generateLevel(1);
 setupTouchControls();

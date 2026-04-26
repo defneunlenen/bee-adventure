@@ -215,37 +215,151 @@ function drawBee(p) {
         ctx.globalAlpha = 1;
     }
 
-    // Body
-    ctx.fillStyle = p.superMode ? '#FF6F00' : '#FFC107';
+    // Shield aura
+    if (p.shield) {
+        ctx.globalAlpha = 0.2 + Math.sin(frameCount * 0.08) * 0.1;
+        ctx.strokeStyle = '#42A5F5';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 20, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+    }
+
+    // Speed boost trail
+    if (p.speedBoost > 0) {
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#FF9800';
+        for (let i = 1; i <= 3; i++) {
+            ctx.beginPath();
+            ctx.ellipse(-p.facing * i * 8, i * 2, 6 - i, 4 - i, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // Body (skin-aware)
+    const skinDef = SKINS[p.skin] || SKINS.normal;
+    ctx.fillStyle = p.superMode ? '#FF6F00' : skinDef.body;
     ctx.beginPath();
     ctx.ellipse(0, 0, 14, 11, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Stripes
-    ctx.fillStyle = p.superMode ? '#4A148C' : '#2C2C2C';
+    ctx.fillStyle = p.superMode ? '#4A148C' : skinDef.stripe;
     ctx.fillRect(-4, -4, 10, 3);
     ctx.fillRect(-6, 2, 12, 3);
     ctx.fillRect(-3, 7, 8, 3);
 
     // Head
-    ctx.fillStyle = '#FFD54F';
+    ctx.fillStyle = p.superMode ? '#FFD54F' : skinDef.head;
     ctx.beginPath();
     ctx.arc(12, -2, 8, 0, Math.PI * 2);
     ctx.fill();
 
-    // Eyes
-    ctx.fillStyle = 'white';
-    ctx.beginPath();
-    ctx.arc(15, -4, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath();
-    ctx.arc(16, -4, 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'white';
-    ctx.beginPath();
-    ctx.arc(16.5, -5, 0.8, 0, Math.PI * 2);
-    ctx.fill();
+    // --- Skin-specific details ---
+    if (p.skin === 'girl') {
+        // Kiz Ari: kirpikler, fiyonk, allık
+        // Blush (allık)
+        ctx.fillStyle = 'rgba(255, 105, 180, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(14, 2, 4, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Eyelashes (kirpikler)
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(18, -8);
+        ctx.lineTo(20, -11);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(16, -8);
+        ctx.lineTo(17, -11);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(14, -8);
+        ctx.lineTo(14, -11);
+        ctx.stroke();
+        // Bow (fiyonk) on head
+        ctx.fillStyle = '#FF1493';
+        ctx.beginPath();
+        ctx.moveTo(10, -10);
+        ctx.quadraticCurveTo(4, -18, 10, -16);
+        ctx.quadraticCurveTo(16, -18, 10, -10);
+        ctx.fill();
+        ctx.fillStyle = '#FF69B4';
+        ctx.beginPath();
+        ctx.arc(10, -13, 2, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (p.skin === 'super') {
+        // Super Ari: pelerin, yıldız, maske
+        // Cape (pelerin)
+        ctx.fillStyle = '#D500F9';
+        ctx.beginPath();
+        ctx.moveTo(-8, -6);
+        ctx.quadraticCurveTo(-20, 0, -16, 14);
+        ctx.lineTo(-10, 10);
+        ctx.quadraticCurveTo(-14, 4, -8, -2);
+        ctx.fill();
+        // Mask (maske)
+        ctx.fillStyle = '#7C4DFF';
+        ctx.beginPath();
+        ctx.moveTo(10, -6);
+        ctx.lineTo(20, -6);
+        ctx.lineTo(21, -3);
+        ctx.lineTo(10, -3);
+        ctx.fill();
+        // Star on body (gogus yildizi)
+        ctx.fillStyle = '#FFEB3B';
+        const starX = 0, starY = -1;
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const angle = -Math.PI / 2 + (i * 2 * Math.PI / 5);
+            const outerR = 4;
+            const innerR = 1.8;
+            ctx.lineTo(starX + Math.cos(angle) * outerR, starY + Math.sin(angle) * outerR);
+            const a2 = angle + Math.PI / 5;
+            ctx.lineTo(starX + Math.cos(a2) * innerR, starY + Math.sin(a2) * innerR);
+        }
+        ctx.closePath();
+        ctx.fill();
+    } else if (p.skin === 'funny') {
+        // Komik Ari: kocaman gozler, dil, komik anten toplari
+        // Big silly eyes drawn below (replaces normal eyes)
+    }
+
+    // Eyes (skin-specific for funny, normal for others)
+    if (p.skin === 'funny') {
+        // Huge silly eyes
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(14, -4, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1a1a1a';
+        // Cross-eyed pupils
+        const pupilX = 14 + Math.sin(frameCount * 0.1) * 2;
+        ctx.beginPath();
+        ctx.arc(pupilX, -3, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(pupilX + 0.5, -4.5, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        // Normal eyes
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(15, -4, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.arc(16, -4, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(16.5, -5, 0.8, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     // Antennae
     ctx.strokeStyle = '#2C2C2C';
@@ -258,13 +372,41 @@ function drawBee(p) {
     ctx.moveTo(12, -9);
     ctx.quadraticCurveTo(10, -20, 14, -19);
     ctx.stroke();
-    ctx.fillStyle = '#FF9800';
-    ctx.beginPath();
-    ctx.arc(20, -16, 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(14, -19, 2, 0, Math.PI * 2);
-    ctx.fill();
+    if (p.skin === 'funny') {
+        // Big colorful antenna balls
+        ctx.fillStyle = '#FF1744';
+        ctx.beginPath();
+        ctx.arc(20, -16, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2979FF';
+        ctx.beginPath();
+        ctx.arc(14, -19, 4, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (p.skin === 'girl') {
+        // Heart-shaped antenna tips
+        ctx.fillStyle = '#FF1493';
+        for (const pos of [[20, -16], [14, -19]]) {
+            ctx.beginPath();
+            ctx.arc(pos[0] - 1.5, pos[1] - 1, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pos[0] + 1.5, pos[1] - 1, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(pos[0] - 3, pos[1]);
+            ctx.lineTo(pos[0], pos[1] + 3);
+            ctx.lineTo(pos[0] + 3, pos[1]);
+            ctx.fill();
+        }
+    } else {
+        ctx.fillStyle = p.skin === 'super' ? '#FFEB3B' : '#FF9800';
+        ctx.beginPath();
+        ctx.arc(20, -16, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(14, -19, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     // Stinger
     ctx.fillStyle = p.superMode ? '#E040FB' : '#2C2C2C';
@@ -292,12 +434,32 @@ function drawBee(p) {
         ctx.stroke();
     }
 
-    // Smile
-    ctx.strokeStyle = '#5D4037';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(15, -1, 3, 0.2, Math.PI - 0.2);
-    ctx.stroke();
+    // Mouth
+    if (p.skin === 'funny') {
+        // Big open grin + tongue
+        ctx.fillStyle = '#F44336';
+        ctx.beginPath();
+        ctx.arc(15, 0, 4, 0, Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#E91E63';
+        ctx.beginPath();
+        ctx.ellipse(15, 4, 2, 3 + Math.sin(frameCount * 0.08) * 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (p.skin === 'girl') {
+        // Cute small smile
+        ctx.strokeStyle = '#C2185B';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(15, -1, 2.5, 0.3, Math.PI - 0.3);
+        ctx.stroke();
+    } else {
+        // Normal smile
+        ctx.strokeStyle = '#5D4037';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(15, -1, 3, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+    }
 
     ctx.restore();
 }
@@ -388,6 +550,7 @@ function drawBird(e) {
 }
 
 function drawWasp(e) {
+    if (!e.alive) return;
     const sx = e.x - cameraX;
     const dir = e.vx > 0 ? 1 : -1;
     const floatY = Math.sin(frameCount * 0.05 + e.floatOffset) * 8;
@@ -866,11 +1029,62 @@ function drawHUD() {
         ctx.fillText('E/X: Igne At', 235, 48);
     }
 
+    // Power-up indicators
+    let puX = 220;
+    if (!player.superMode) puX = 220;
+    else puX = 360;
+
+    if (player.shield) {
+        ctx.fillStyle = 'rgba(66, 165, 245, 0.4)';
+        ctx.fillRect(puX, 10, 50, 20);
+        ctx.fillStyle = '#42A5F5';
+        ctx.font = 'bold 11px Arial';
+        ctx.fillText('KALKAN', puX + 4, 24);
+        puX += 55;
+    }
+    if (player.magnet > 0) {
+        ctx.fillStyle = 'rgba(244, 67, 54, 0.4)';
+        ctx.fillRect(puX, 10, 50, 20);
+        ctx.fillStyle = '#EF5350';
+        ctx.font = 'bold 11px Arial';
+        ctx.fillText('MIKNAT', puX + 2, 24);
+        puX += 55;
+    }
+    if (player.speedBoost > 0) {
+        ctx.fillStyle = 'rgba(255, 152, 0, 0.4)';
+        ctx.fillRect(puX, 10, 40, 20);
+        ctx.fillStyle = '#FF9800';
+        ctx.font = 'bold 11px Arial';
+        ctx.fillText('HIZ', puX + 8, 24);
+        puX += 45;
+    }
+    if (player.hasDoubleJump) {
+        ctx.fillStyle = 'rgba(156, 39, 176, 0.4)';
+        ctx.fillRect(puX, 10, 45, 20);
+        ctx.fillStyle = '#CE93D8';
+        ctx.font = 'bold 11px Arial';
+        ctx.fillText('2xZIP', puX + 4, 24);
+    }
+
+    // Boss HP bar
+    if (boss && boss.alive) {
+        drawBossHP();
+    }
+
+    // Sound indicator
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '11px Arial';
+    ctx.fillText(soundEnabled ? 'M:Ses ON' : 'M:Ses OFF', canvas.width - 70, canvas.height - 10);
+
+    // Controls hint
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.fillRect(canvas.width - 280, 10, 270, 30);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.font = '12px Arial';
     ctx.fillText('Oklar/WASD: Hareket | Space: Zipla | E: Igne', canvas.width - 275, 30);
+
+    // Achievement notifications
+    drawAchievementNotifications();
 }
 
 function drawParticles() {
@@ -925,6 +1139,369 @@ function drawPollenParticles() {
     });
 
     if (pollenParticles.length > 80) pollenParticles.splice(0, 10);
+}
+
+function drawMovingPlatform(mp) {
+    const sx = mp.x - cameraX;
+    if (sx < -mp.w - 10 || sx > canvas.width + 10) return;
+
+    const grad = ctx.createLinearGradient(sx, mp.y, sx, mp.y + mp.h);
+    grad.addColorStop(0, '#80DEEA');
+    grad.addColorStop(0.3, '#4DD0E1');
+    grad.addColorStop(1, '#26C6DA');
+    ctx.fillStyle = grad;
+    ctx.fillRect(sx, mp.y, mp.w, mp.h);
+    ctx.strokeStyle = '#00ACC1';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx, mp.y, mp.w, mp.h);
+
+    // Arrow indicators
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(mp.axis === 'y' ? '↕' : '↔', sx + mp.w / 2, mp.y + mp.h / 2 + 5);
+    ctx.textAlign = 'left';
+}
+
+function drawTrampoline(t) {
+    const sx = t.x - cameraX;
+    if (sx < -40 || sx > canvas.width + 40) return;
+
+    const squish = t.bounceTimer > 0 ? Math.sin(t.bounceTimer * 0.3) * 4 : 0;
+
+    ctx.save();
+    ctx.translate(sx + t.w / 2, t.y + t.h);
+
+    // Stem
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(-3, -t.h + squish, 6, t.h - squish);
+
+    // Mushroom cap
+    ctx.fillStyle = '#E53935';
+    ctx.beginPath();
+    ctx.ellipse(0, -t.h + squish, 18, 10 - squish, 0, Math.PI, 0);
+    ctx.fill();
+
+    // White spots
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(-7, -t.h - 4 + squish, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(5, -t.h - 6 + squish, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -t.h - 2 + squish, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bounce effect
+    if (t.bounceTimer > 0) {
+        ctx.globalAlpha = t.bounceTimer / 15;
+        ctx.strokeStyle = '#FFEB3B';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, -t.h - 10 + squish, 20, 6, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function drawWaterZone(wz) {
+    const sx = wz.x - cameraX;
+    if (sx < -wz.w || sx > canvas.width + 10) return;
+
+    ctx.save();
+
+    // Water body
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#1565C0';
+    ctx.fillRect(sx, wz.y, wz.w, wz.h);
+
+    // Wave surface
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = '#42A5F5';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let x = 0; x < wz.w; x += 4) {
+        const wy = wz.y + Math.sin((x + frameCount * 2) * 0.05 + wz.waveOffset) * 4;
+        if (x === 0) ctx.moveTo(sx + x, wy);
+        else ctx.lineTo(sx + x, wy);
+    }
+    ctx.stroke();
+
+    // Bubbles
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#90CAF9';
+    for (let i = 0; i < 5; i++) {
+        const bx = sx + (wz.w * (i + 0.5)) / 5;
+        const by = wz.y + wz.h * 0.3 + Math.sin(frameCount * 0.03 + i * 2) * wz.h * 0.25;
+        const br = 2 + Math.sin(frameCount * 0.05 + i) * 1;
+        ctx.beginPath();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+function drawBoss() {
+    if (!boss || !boss.alive) return;
+    const sx = boss.x - cameraX;
+    if (sx < -100 || sx > canvas.width + 100) return;
+
+    const floatY = Math.sin(frameCount * 0.04 + boss.floatOffset) * 10;
+    const flash = boss.flashTimer > 0 && Math.floor(boss.flashTimer / 3) % 2 === 0;
+
+    ctx.save();
+    ctx.translate(sx + boss.w / 2, boss.y + boss.h / 2 + floatY);
+
+    if (flash) {
+        ctx.globalAlpha = 0.5;
+    }
+
+    const dir = boss.vx > 0 ? 1 : -1;
+    ctx.scale(dir, 1);
+    const scale = boss.w / 64;
+
+    // Boss body (enlarged bird/wasp)
+    if (boss.type === 'bigbird' || boss.type === 'kingbird') {
+        // Large red/gold body
+        const bodyColor = boss.type === 'kingbird' ? '#FFD700' : '#c0392b';
+        const headColor = boss.type === 'kingbird' ? '#FFF8E1' : '#e74c3c';
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 28 * scale, 20 * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = headColor;
+        ctx.beginPath();
+        ctx.arc(22 * scale, -6 * scale, 14 * scale, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crown for king
+        if (boss.type === 'kingbird') {
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.moveTo(14 * scale, -20 * scale);
+            ctx.lineTo(18 * scale, -30 * scale);
+            ctx.lineTo(22 * scale, -22 * scale);
+            ctx.lineTo(26 * scale, -32 * scale);
+            ctx.lineTo(30 * scale, -20 * scale);
+            ctx.fill();
+        }
+
+        // Angry eyes
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(26 * scale, -10 * scale, 6 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#b71c1c';
+        ctx.beginPath();
+        ctx.arc(27 * scale, -10 * scale, 3 * scale, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyebrow
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(20 * scale, -18 * scale);
+        ctx.lineTo(32 * scale, -15 * scale);
+        ctx.stroke();
+
+        // Beak
+        ctx.fillStyle = '#f39c12';
+        ctx.beginPath();
+        ctx.moveTo(34 * scale, -6 * scale);
+        ctx.lineTo(44 * scale, -3 * scale);
+        ctx.lineTo(34 * scale, 0);
+        ctx.fill();
+
+        // Wings
+        const wingA = Math.sin(frameCount * 0.15) * 0.4;
+        ctx.fillStyle = headColor;
+        ctx.save();
+        ctx.rotate(wingA - 0.3);
+        ctx.beginPath();
+        ctx.ellipse(-8 * scale, -16 * scale, 22 * scale, 10 * scale, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    } else {
+        // Giant wasp
+        ctx.fillStyle = '#FFB300';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30 * scale, 22 * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(-12 * scale, -10 * scale, 24 * scale, 6 * scale);
+        ctx.fillRect(-14 * scale, 2 * scale, 28 * scale, 6 * scale);
+
+        ctx.fillStyle = '#FF8F00';
+        ctx.beginPath();
+        ctx.arc(24 * scale, -4 * scale, 14 * scale, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(28 * scale, -8 * scale, 7 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#b71c1c';
+        ctx.beginPath();
+        ctx.arc(29 * scale, -8 * scale, 4 * scale, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stinger
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.moveTo(-28 * scale, 2 * scale);
+        ctx.lineTo(-42 * scale, 0);
+        ctx.lineTo(-28 * scale, -2 * scale);
+        ctx.fill();
+
+        const wingF = Math.sin(frameCount * 0.4) * 0.5;
+        ctx.fillStyle = 'rgba(220,240,255,0.5)';
+        ctx.save();
+        ctx.rotate(-0.4 + wingF);
+        ctx.beginPath();
+        ctx.ellipse(-5 * scale, -20 * scale, 24 * scale, 12 * scale, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    ctx.restore();
+}
+
+function drawBossHP() {
+    if (!boss || !boss.alive) return;
+    const barW = 200;
+    const barH = 16;
+    const bx = (canvas.width - barW) / 2;
+    const by = canvas.height - 35;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(bx - 2, by - 2, barW + 4, barH + 4);
+
+    ctx.fillStyle = '#424242';
+    ctx.fillRect(bx, by, barW, barH);
+
+    const hpRatio = boss.hp / boss.maxHp;
+    const hpColor = hpRatio > 0.5 ? '#4CAF50' : hpRatio > 0.25 ? '#FF9800' : '#F44336';
+    ctx.fillStyle = hpColor;
+    ctx.fillRect(bx, by, barW * hpRatio, barH);
+
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 11px Arial';
+    ctx.textAlign = 'center';
+    const bossName = boss.type === 'bigbird' ? 'BUYUK KUS' : boss.type === 'giantwasp' ? 'DEV ESEK ARISI' : 'KRAL KUS';
+    ctx.fillText(bossName + ' ' + boss.hp + '/' + boss.maxHp, canvas.width / 2, by + 12);
+    ctx.textAlign = 'left';
+}
+
+function drawSecretArea(sa) {
+    if (sa.discovered) {
+        if (sa.flashTimer > 0) {
+            const sx = sa.triggerX - cameraX;
+            ctx.save();
+            ctx.globalAlpha = sa.flashTimer / 120;
+            ctx.fillStyle = '#FFD54F';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('GIZLI BOLGE! +500', sx + sa.triggerW / 2, sa.triggerY - 10);
+            ctx.textAlign = 'left';
+            ctx.restore();
+        }
+        return;
+    }
+
+    const sx = sa.triggerX - cameraX;
+    if (sx < -50 || sx > canvas.width + 50) return;
+
+    // Hint: slightly different colored wall section
+    ctx.save();
+    const pulse = 0.15 + Math.sin(frameCount * 0.04) * 0.05;
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#CE93D8';
+    ctx.fillRect(sx, sa.triggerY, sa.triggerW, sa.triggerH);
+    ctx.restore();
+}
+
+function drawPowerUp(pu) {
+    if (pu.collected) return;
+    const sx = pu.x - cameraX;
+    if (sx < -30 || sx > canvas.width + 30) return;
+
+    const bob = Math.sin(frameCount * 0.07 + pu.bobPhase) * 5;
+
+    ctx.save();
+    ctx.translate(sx + pu.w / 2, pu.y + pu.h / 2 + bob);
+
+    // Glow
+    const colors = { shield: '#42A5F5', magnet: '#EF5350', speed: '#FF9800', doubleJump: '#CE93D8' };
+    const icons = { shield: '🛡', magnet: '🧲', speed: '⚡', doubleJump: '↑↑' };
+    const color = colors[pu.kind] || '#FFD54F';
+
+    ctx.globalAlpha = 0.3 + Math.sin(frameCount * 0.08) * 0.15;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+
+    // Box
+    ctx.fillStyle = color;
+    ctx.fillRect(-14, -14, 28, 28);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-14, -14, 28, 28);
+
+    // Icon
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (pu.kind === 'doubleJump') {
+        ctx.fillText('2x', 0, 0);
+    } else if (pu.kind === 'shield') {
+        ctx.fillText('S', 0, 0);
+    } else if (pu.kind === 'magnet') {
+        ctx.fillText('M', 0, 0);
+    } else {
+        ctx.fillText('H', 0, 0);
+    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    ctx.restore();
+}
+
+function drawAchievementNotifications() {
+    achievementNotifications.forEach((n, i) => {
+        n.timer--;
+        if (n.timer <= 0) { achievementNotifications.splice(i, 1); return; }
+
+        const slideIn = Math.min(1, (120 - n.timer) / 15);
+        const slideOut = n.timer < 20 ? n.timer / 20 : 1;
+        const alpha = slideIn * slideOut;
+        const x = canvas.width - 250 * slideIn;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(x, 50 + i * 45, 240, 38);
+        ctx.strokeStyle = '#FFD54F';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, 50 + i * 45, 240, 38);
+        ctx.fillStyle = '#FFD54F';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText('BASARIM!', x + 10, 66 + i * 45);
+        ctx.fillStyle = 'white';
+        ctx.font = '11px Arial';
+        ctx.fillText(n.text, x + 10, 80 + i * 45);
+        ctx.restore();
+    });
 }
 
 function spawnParticles(x, y, color, count) {

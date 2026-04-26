@@ -10,6 +10,13 @@ function generateLevel(lvl) {
     clouds = [];
     backgroundFlowers = [];
     butterflies = [];
+    movingPlatforms = [];
+    trampolines = [];
+    waterZones = [];
+    boss = null;
+    secretAreas = [];
+    powerUps = [];
+    enemyStingers = [];
 
     const groundY = WORLD_HEIGHT - 2;
 
@@ -55,23 +62,19 @@ function generateLevel(lvl) {
         const cx = 5 + Math.floor(Math.random() * (WORLD_WIDTH - 15));
         const coinX = cx * TILE_SIZE + 10;
 
-        // Find platforms at this x position
         const platformsHere = platforms.filter(p =>
             coinX + 20 > p.x && coinX < p.x + p.w
         );
 
-        if (platformsHere.length === 0) continue; // Over a gap, skip
+        if (platformsHere.length === 0) continue;
 
-        // Pick a random platform to place coin above
         const targetPlatform = platformsHere[Math.floor(Math.random() * platformsHere.length)];
 
-        // Place 1-4 tiles above it (within jump reach)
         const tilesUp = 1 + Math.floor(Math.random() * 4);
         const coinY = targetPlatform.y - tilesUp * TILE_SIZE;
 
-        if (coinY < TILE_SIZE) continue; // Don't place above screen
+        if (coinY < TILE_SIZE) continue;
 
-        // Ensure coin is not inside any platform
         const blocked = platforms.some(p =>
             coinX < p.x + p.w && coinX + 20 > p.x &&
             coinY < p.y + p.h && coinY + 20 > p.y
@@ -81,7 +84,6 @@ function generateLevel(lvl) {
             coinPositions.push({ x: coinX, y: coinY, collected: false });
         }
     }
-    // Add coins above floating platforms
     platConfigs.forEach(p => {
         for (let i = 0; i < p.len; i += 2) {
             const coinX = (p.x + i) * TILE_SIZE + 10;
@@ -115,13 +117,13 @@ function generateLevel(lvl) {
         });
     }
 
-    // Wasps (esek arisi)
+    // Wasps (esek arisi) - spawned at reachable height
     const waspCount = 2 + lvl;
     const waspSpacing = Math.floor((WORLD_WIDTH - 40) / (waspCount + 1));
     for (let i = 0; i < waspCount; i++) {
         const wx = (15 + (i + 1) * waspSpacing) * TILE_SIZE;
         enemies.push({
-            x: wx, y: (2 + Math.random() * 3) * TILE_SIZE,
+            x: wx, y: (groundY - 4 + Math.floor(Math.random() * 2)) * TILE_SIZE,
             w: 40, h: 32,
             vx: (0.6 + Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1) * (0.8 + lvl * 0.2),
             startX: wx - 120, endX: wx + 120,
@@ -134,7 +136,146 @@ function generateLevel(lvl) {
         });
     }
 
-    // Flag position
+    // Moving platforms
+    const movPlatDefs = [
+        { x: 32, y: 6, len: 3, axis: 'y', range: 3, speed: 0.8 },
+        { x: 55, y: 7, len: 3, axis: 'x', range: 4, speed: 1.0 },
+        { x: 95, y: 5, len: 3, axis: 'y', range: 4, speed: 0.6 },
+        { x: 140, y: 6, len: 3, axis: 'x', range: 3, speed: 0.9 },
+    ];
+    const movCount = Math.min(3 + lvl, movPlatDefs.length);
+    for (let i = 0; i < movCount; i++) {
+        const d = movPlatDefs[i];
+        movingPlatforms.push({
+            x: d.x * TILE_SIZE, y: d.y * TILE_SIZE,
+            w: d.len * TILE_SIZE, h: TILE_SIZE,
+            originX: d.x * TILE_SIZE, originY: d.y * TILE_SIZE,
+            axis: d.axis,
+            range: d.range * TILE_SIZE,
+            speed: d.speed,
+            phase: Math.random() * Math.PI * 2,
+            type: 'moving'
+        });
+    }
+
+    // Trampolines
+    const trampDefs = [
+        { x: 14, y: groundY }, { x: 43, y: groundY }, { x: 70, y: groundY },
+        { x: 100, y: groundY }, { x: 130, y: groundY }, { x: 160, y: groundY }
+    ];
+    const trampCount = Math.min(4 + lvl, trampDefs.length);
+    for (let i = 0; i < trampCount; i++) {
+        const d = trampDefs[i];
+        trampolines.push({
+            x: d.x * TILE_SIZE, y: d.y * TILE_SIZE - 20,
+            w: 30, h: 20,
+            bounceTimer: 0
+        });
+    }
+
+    // Water zones
+    const waterDefs = [
+        { x1: 60, x2: 68, depth: 3 },
+        { x1: 150, x2: 158, depth: 3 },
+        { x1: 108, x2: 114, depth: 3 }
+    ];
+    const waterCount = Math.min(1 + lvl, waterDefs.length);
+    for (let i = 0; i < waterCount; i++) {
+        const d = waterDefs[i];
+        waterZones.push({
+            x: d.x1 * TILE_SIZE,
+            y: (groundY - d.depth) * TILE_SIZE,
+            w: (d.x2 - d.x1) * TILE_SIZE,
+            h: (d.depth + 2) * TILE_SIZE,
+            waveOffset: Math.random() * Math.PI * 2
+        });
+    }
+
+    // Secret areas
+    const secretDefs = [
+        { x: 38, y: 3, w: 4, h: 4, coins: 8 },
+        { x: 88, y: 2, w: 5, h: 5, coins: 12 },
+        { x: 160, y: 3, w: 4, h: 4, coins: 10 }
+    ];
+    const secretCount = Math.min(1 + lvl, secretDefs.length);
+    for (let i = 0; i < secretCount; i++) {
+        const d = secretDefs[i];
+        secretAreas.push({
+            triggerX: d.x * TILE_SIZE, triggerY: d.y * TILE_SIZE,
+            triggerW: TILE_SIZE, triggerH: d.h * TILE_SIZE,
+            discovered: false,
+            coinCount: d.coins,
+            flashTimer: 0
+        });
+    }
+
+    // Power-ups
+    const puDefs = [
+        { x: 22, y: 7, kind: 'shield' },
+        { x: 68, y: 6, kind: 'magnet' },
+        { x: 112, y: 7, kind: 'speed' },
+        { x: 155, y: 6, kind: 'doubleJump' },
+        { x: 180, y: 7, kind: 'shield' }
+    ];
+    const puCount = Math.min(2 + lvl, puDefs.length);
+    for (let i = 0; i < puCount; i++) {
+        const d = puDefs[i];
+        powerUps.push({
+            x: d.x * TILE_SIZE, y: d.y * TILE_SIZE,
+            w: 28, h: 28,
+            kind: d.kind,
+            collected: false,
+            bobPhase: Math.random() * Math.PI * 2
+        });
+    }
+
+    // Boss (near end of level) - lowered for reachability
+    const bossX = (WORLD_WIDTH - 15) * TILE_SIZE;
+    if (lvl === 1) {
+        boss = { x: bossX, y: (groundY - 5) * TILE_SIZE, w: 64, h: 48, hp: 5, maxHp: 5, type: 'bigbird', phase: 'patrol', attackTimer: 120, vx: 1.5, vy: 0, startX: bossX - 160, endX: bossX + 160, floatOffset: 0, alive: true, flashTimer: 0 };
+    } else if (lvl === 2) {
+        boss = { x: bossX, y: (groundY - 6) * TILE_SIZE, w: 72, h: 56, hp: 8, maxHp: 8, type: 'giantwasp', phase: 'patrol', attackTimer: 90, vx: 1.2, vy: 0, startX: bossX - 200, endX: bossX + 200, floatOffset: 0, alive: true, flashTimer: 0, shootTimer: 60 };
+    } else {
+        boss = { x: bossX, y: (groundY - 6) * TILE_SIZE, w: 80, h: 60, hp: 12, maxHp: 12, type: 'kingbird', phase: 'patrol', attackTimer: 80, vx: 1.8, vy: 0, startX: bossX - 240, endX: bossX + 240, floatOffset: 0, alive: true, flashTimer: 0, shootTimer: 50, summonTimer: 300 };
+    }
+
+    // Boss area: guaranteed super box + trampolines + checkpoint
+    const bossAreaX = WORLD_WIDTH - 20;
+
+    // Super box right before boss - always available, resets on death
+    superBoxes.push({
+        x: bossAreaX * TILE_SIZE,
+        y: (groundY - 2) * TILE_SIZE,
+        w: 36, h: 36,
+        opened: false,
+        hintPhase: 0,
+        bossBox: true
+    });
+
+    // Checkpoint right before boss area
+    checkpoints.push({
+        x: (bossAreaX - 2) * TILE_SIZE,
+        y: (groundY - 1) * TILE_SIZE,
+        activated: false,
+        glowFrame: 0
+    });
+
+    // Trampolines in boss fight area
+    const bossTrampolines = [
+        { x: bossAreaX + 2 },
+        { x: bossAreaX + 6 },
+        { x: bossAreaX + 10 },
+    ];
+    bossTrampolines.forEach(bt => {
+        trampolines.push({
+            x: bt.x * TILE_SIZE,
+            y: groundY * TILE_SIZE - 20,
+            w: 30, h: 20,
+            bounceTimer: 0
+        });
+    });
+
+    // Flag position (after boss area)
     flagX = (WORLD_WIDTH - 5) * TILE_SIZE;
 
     // Background clouds
@@ -192,7 +333,6 @@ function generateLevel(lvl) {
     // Super food boxes
     superBoxes = [];
     stingers = [];
-    enemyStingers = [];
     const boxPositions = [
         { x: 15, y: 7 }, { x: 38, y: 6 }, { x: 60, y: 5 },
         { x: 85, y: 7 }, { x: 110, y: 6 }, { x: 140, y: 5 },
@@ -218,5 +358,12 @@ function generateLevel(lvl) {
     player.invincible = 0;
     player.superMode = false;
     player.shootCooldown = 0;
+    player.hasDoubleJump = false;
+    player.doubleJumpAvailable = false;
+    player.shield = false;
+    player.magnet = 0;
+    player.speedBoost = 0;
+    player.inWater = false;
+    deathsThisLevel = 0;
     cameraX = 0;
 }

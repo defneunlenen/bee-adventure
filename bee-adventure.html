@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ari Macerasi - Bee Adventure</title>
+    <title>Defnenin Ari Macerasi</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -29,9 +29,13 @@
             color: white;
             display: none;
             z-index: 10;
+            background: rgba(0,0,0,0.75);
+            padding: 30px 40px;
+            border-radius: 16px;
+            max-width: 600px;
         }
         #ui-overlay h1 { font-size: 48px; text-shadow: 3px 3px 6px rgba(0,0,0,0.5); }
-        #ui-overlay p { font-size: 20px; margin: 15px 0; }
+        #ui-overlay p { font-size: 16px; margin: 15px 0; line-height: 1.5; }
         #ui-overlay button {
             padding: 12px 36px;
             font-size: 20px;
@@ -55,7 +59,9 @@
     </div>
 
     <script src="js/config.js"></script>
+    <script src="js/sound.js"></script>
     <script src="js/input.js"></script>
+    <script src="js/achievements.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/player.js"></script>
     <script src="js/level.js"></script>

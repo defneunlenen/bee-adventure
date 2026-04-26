@@ -21,6 +21,7 @@ let cameraX = 0;
 let particles = [];
 let pollenParticles = [];
 let frameCount = 0;
+let deathsThisLevel = 0;
 
 // Constants
 const GRAVITY = 0.6;
@@ -38,7 +39,18 @@ const player = {
     invincible: 0,
     animFrame: 0,
     superMode: false,
-    shootCooldown: 0
+    shootCooldown: 0,
+    // Double jump
+    hasDoubleJump: false,
+    doubleJumpAvailable: false,
+    // Power-ups
+    shield: false,
+    magnet: 0,
+    speedBoost: 0,
+    // Water
+    inWater: false,
+    // Skin
+    skin: 'normal'
 };
 
 // Level data
@@ -55,3 +67,35 @@ let lastCheckpoint = null;
 let superBoxes = [];
 let stingers = [];
 let enemyStingers = [];
+
+// New feature arrays
+let movingPlatforms = [];
+let trampolines = [];
+let waterZones = [];
+let boss = null;
+let secretAreas = [];
+let powerUps = [];
+
+// Skin definitions (all unlocked from start)
+const SKINS = {
+    normal:  { name: 'Normal Ari',   body: '#FFC107', head: '#FFD54F', stripe: '#2C2C2C' },
+    girl:    { name: 'Kiz Ari',      body: '#FF80AB', head: '#FFB6C1', stripe: '#C2185B' },
+    super:   { name: 'Super Ari',    body: '#7C4DFF', head: '#B388FF', stripe: '#311B92' },
+    funny:   { name: 'Komik Ari',    body: '#76FF03', head: '#CCFF90', stripe: '#33691E' }
+};
+
+// Sound toggle
+let soundEnabled = true;
+
+// High scores
+let highScores = JSON.parse(localStorage.getItem('beeHighScores') || '[]');
+
+// All skins unlocked
+let unlockedSkins = Object.keys(SKINS);
+let selectedSkin = localStorage.getItem('beeSelectedSkin') || 'normal';
+// Validate saved skin still exists
+if (!SKINS[selectedSkin]) selectedSkin = 'normal';
+player.skin = selectedSkin;
+
+// Achievement notification queue
+let achievementNotifications = [];
